@@ -1,0 +1,228 @@
+{
+  "name": "nx-driver-creator",
+  "displayName": "NX Driver Creator",
+  "description": "Create, scaffold, and package Notrix drivers using nx-driver-sdk, nx-driver-templates, and nx-driver-packager.",
+  "version": "0.1.0",
+  "publisher": "notrix",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "nxDriver.createDriver",
+        "title": "NX Driver: Create New Driver",
+        "icon": "$(add)"
+      },
+      {
+        "command": "nxDriver.packageDriver",
+        "title": "NX Driver: Package Driver (.nxpkg)"
+      },
+      {
+        "command": "nxDriver.verifyPackage",
+        "title": "NX Driver: Verify Package"
+      },
+      {
+        "command": "nxDriver.buildDriver",
+        "title": "NX Driver: Build Driver"
+      },
+      {
+        "command": "nxDriver.runDriver",
+        "title": "NX Driver: Run Driver Locally"
+      },
+      {
+        "command": "nxDriver.editManifest",
+        "title": "NX Driver: Edit Manifest"
+      },
+      {
+        "command": "nxDriver.addEndpoint",
+        "title": "NX Driver: Add Endpoint"
+      },
+      {
+        "command": "nxDriver.addVariable",
+        "title": "NX Driver: Add Variable"
+      },
+      {
+        "command": "nxDriver.addEvent",
+        "title": "NX Driver: Add Event"
+      },
+      {
+        "command": "nxDriver.addCapability",
+        "title": "NX Driver: Add Capability"
+      },
+      {
+        "command": "nxDriver.enableSpecgen",
+        "title": "NX Driver: Enable Spec Generation"
+      },
+      {
+        "command": "nxDriver.refreshExplorer",
+        "title": "NX Driver: Refresh Explorer",
+        "icon": "$(refresh)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "nxDriverExplorer",
+          "title": "NX Drivers",
+          "icon": "$(circuit-board)"
+        }
+      ]
+    },
+    "views": {
+      "nxDriverExplorer": [
+        {
+          "id": "nxDriverTree",
+          "name": "Driver Projects"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "nxDriver.createDriver",
+          "when": "view == nxDriverTree",
+          "group": "navigation"
+        },
+        {
+          "command": "nxDriver.refreshExplorer",
+          "when": "view == nxDriverTree",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "nxDriver.buildDriver",
+          "when": "view == nxDriverTree && viewItem == driverProject",
+          "group": "1_build@1"
+        },
+        {
+          "command": "nxDriver.packageDriver",
+          "when": "view == nxDriverTree && viewItem == driverProject",
+          "group": "1_build@2"
+        },
+        {
+          "command": "nxDriver.runDriver",
+          "when": "view == nxDriverTree && viewItem == driverProject",
+          "group": "2_run@1"
+        },
+        {
+          "command": "nxDriver.addEndpoint",
+          "when": "view == nxDriverTree && viewItem == endpointsNode",
+          "group": "inline"
+        },
+        {
+          "command": "nxDriver.addVariable",
+          "when": "view == nxDriverTree && viewItem == variablesNode",
+          "group": "inline"
+        },
+        {
+          "command": "nxDriver.addEvent",
+          "when": "view == nxDriverTree && viewItem == eventsNode",
+          "group": "inline"
+        },
+        {
+          "command": "nxDriver.addCapability",
+          "when": "view == nxDriverTree && viewItem == capabilitiesNode",
+          "group": "inline"
+        },
+        {
+          "command": "nxDriver.enableSpecgen",
+          "when": "view == nxDriverTree && viewItem == driverProject",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "NX Driver Creator",
+      "properties": {
+        "nxDriver.sdkPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the nx-driver-sdk repository (for local development)."
+        },
+        "nxDriver.templatesPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the nx-driver-templates repository."
+        },
+        "nxDriver.packagerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the nx-driver-packager binary or repository."
+        },
+        "nxDriver.defaultVendor": {
+          "type": "string",
+          "default": "com.example",
+          "description": "Default vendor prefix for reverse-DNS driver IDs."
+        },
+        "nxDriver.goPath": {
+          "type": "string",
+          "default": "go",
+          "description": "Path to the Go binary."
+        },
+        "nxDriver.autoDetectProjects": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect driver projects in the workspace."
+        },
+        "nxDriver.preBuildSyncCommand": {
+          "type": "string",
+          "default": "go generate ./...",
+          "description": "Command to run before every build/package/run to regenerate code from JSON specs. Supports ${goPath} and ${projectDir} placeholders."
+        },
+        "nxDriver.packageTargetOs": {
+          "type": "string",
+          "default": "linux",
+          "description": "Target OS for package builds (for controller-host compatibility). Example: linux"
+        },
+        "nxDriver.packageTargetArch": {
+          "type": "string",
+          "default": "amd64",
+          "description": "Target architecture for package builds. Example: amd64"
+        },
+        "nxDriver.runPromptForEnv": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prompt for CORE_GRPC_ADDR and EXTERNAL_DEVICE_KEY when running a driver locally."
+        },
+        "nxDriver.runCoreGrpcAddr": {
+          "type": "string",
+          "default": "127.0.0.1:50051",
+          "description": "Last used/default CORE_GRPC_ADDR value for local driver runs."
+        },
+        "nxDriver.runExternalDeviceKey": {
+          "type": "string",
+          "default": "",
+          "description": "Last used/default EXTERNAL_DEVICE_KEY value for local driver runs."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "devhost": "code --new-window --extensionDevelopmentPath=%cd% %cd%",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/test-electron": "^2.3.8",
+    "eslint": "^8.56.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.3"
+  }
+}
