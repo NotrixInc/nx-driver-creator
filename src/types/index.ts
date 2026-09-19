@@ -5,7 +5,69 @@
 
 // ─── Driver Types ───────────────────────────────────────────────────
 
+/**
+ * @deprecated Single-valued, so a driver cannot be both a device and a user
+ * surface — and a television is both. Emitted alongside `roles` for controllers
+ * that have not migrated; new code should read `roles`.
+ */
 export type DriverType = 'DEVICE' | 'HUB' | 'CHILD' | 'UI';
+
+/** How a driver reaches hardware. A different question from whether it faces
+ *  the user, which is why it lives inside the device role rather than beside
+ *  it. */
+export type DeviceTopology = 'DIRECT' | 'HUB' | 'CHILD';
+
+export type PublisherClass = 'SAFETY' | 'MANUAL' | 'AUTOMATION' | 'SENSOR';
+
+export interface DeviceRole {
+  topology?: DeviceTopology;
+  protocols?: Protocol[];
+  transport?: {
+    kind?: 'IP' | 'SERIAL' | 'NONE';
+    scheme?: string;
+    default_port?: number;
+    discovery?: ('ssdp' | 'mdns' | 'arp' | 'manual')[];
+    auth?: 'none' | 'basic' | 'digest' | 'psk' | 'token';
+    timeout_ms?: number;
+  };
+  reachability?: {
+    mode?: 'POLL' | 'PUSH' | 'NONE';
+    interval_ms?: number;
+    stale_after_ms?: number;
+    probe?: string;
+  };
+  /** Which inputs reach which output inside a matrix. The binding graph cannot
+   *  see this, so without it a path through an amplifier is two disconnected
+   *  fragments. Required for a matrix or receiver. */
+  switching?: { output: string; inputs: string[]; selector: string }[];
+}
+
+export interface UIRole {
+  surface?: string;
+  groups?: string[];
+}
+
+/** Two independent, composable flags. Both may be set: that is the case the
+ *  old enum could not express. */
+export interface DriverRoles {
+  device?: DeviceRole;
+  ui?: UIRole;
+}
+
+/** Derives roles from the legacy single-valued type. A driver that declares
+ *  nothing becomes a direct device driver. */
+export function rolesForDriverType(type: DriverType | undefined): DriverRoles {
+  switch ((type ?? '').trim().toUpperCase()) {
+    case 'UI':
+      return { ui: {} };
+    case 'HUB':
+      return { device: { topology: 'HUB' } };
+    case 'CHILD':
+      return { device: { topology: 'CHILD' } };
+    default:
+      return { device: { topology: 'DIRECT' } };
+  }
+}
 
 export type Topology = 'DIRECT_IP' | 'VIA_HUB';
 
@@ -38,13 +100,24 @@ export type VariableType = 'Boolean' | 'Number' | 'Range' | 'Text' | 'Password' 
 // ─── Manifest ──────────────────────────────────────────────────────
 
 export interface DriverManifest {
+  /** 2 selects the version 2 schema, which is validated strictly at install:
+   *  a field the schema does not describe is refused by name. Absent means the
+   *  legacy four-file layout. */
+  schema_version?: 2;
   /** Reverse-DNS identifier, e.g. "com.vendor.product" */
   id: string;
   /** Human-readable name */
   name: string;
   /** Semver version */
   version: string;
-  /** Driver archetype */
+  /** What the driver is. Supersedes driver_type. */
+  roles?: DriverRoles;
+  /** Who this driver publishes as. Rank arbitrates concurrent commands only;
+   *  it is not ownership. Defaults to AUTOMATION. */
+  publisher_class?: PublisherClass;
+  /**
+   * @deprecated Emitted for unmigrated controllers. Read `roles`.
+   */
   driver_type: DriverType;
   /** Device type identifiers used by controller-core (e.g. "DC_Dimmer", "Switch") */
   device_types?: string[];

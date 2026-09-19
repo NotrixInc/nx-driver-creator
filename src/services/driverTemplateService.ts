@@ -1,6 +1,14 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { TemplateInfo, TemplateType, CreateDriverInput } from '../types';
+import {
+  TemplateInfo,
+  TemplateType,
+  CreateDriverInput,
+  DriverType,
+  DriverRoles,
+  Protocol,
+  rolesForDriverType,
+} from '../types';
 import { getExtensionConfig, copyDirectoryWithReplacements, replacePlaceholders } from '../utils';
 
 /**
@@ -189,6 +197,10 @@ export class DriverTemplateService {
    * Update the manifest.json in the scaffolded project.
    */
   private async updateManifest(projectDir: string, input: CreateDriverInput): Promise<void> {
+    /** Puts the chosen protocols where v2 keeps them — inside the device role. */
+    const withProtocols = (roles: DriverRoles, protocols: Protocol[]): DriverRoles =>
+      roles.device ? { ...roles, device: { ...roles.device, protocols } } : roles;
+
     const manifestPath = path.join(projectDir, 'manifest.json');
 
     const driverTypeMap: Record<TemplateType, string> = {
@@ -197,15 +209,26 @@ export class DriverTemplateService {
       child: 'CHILD',
     };
 
+    const driverType = driverTypeMap[input.template];
+
     const manifest = {
+      // A scaffolded driver is born in the version 2 shape. Until this emitted
+      // roles, every new driver started life with the single-valued driver_type
+      // and had to be migrated by hand before it could ever be both a device and
+      // a user surface.
+      schema_version: 2,
       id: input.driverId,
       name: input.driverName,
       version: input.version,
-      driver_type: driverTypeMap[input.template],
+      // protocols move inside the device role, and supported_topologies is gone:
+      // roles.device.topology answers the same question and is the field the
+      // rest of the platform now reads.
+      roles: withProtocols(rolesForDriverType(driverType as DriverType), input.protocols),
+      // Written alongside roles so a controller that predates them still
+      // installs this package. Lossy by nature; nothing new should read it.
+      driver_type: driverType,
       device_types: input.deviceTypes.length > 0 ? input.deviceTypes : undefined,
       capabilities: input.capabilities.length > 0 ? input.capabilities : undefined,
-      supported_topologies: input.topologies,
-      protocols: input.protocols,
       entrypoint: {
         runtime: 'go',
         path: 'bin/driver',
